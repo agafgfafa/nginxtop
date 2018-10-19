@@ -56,4 +56,4 @@ Contributions welcome, just submit a pull request. Please ensure the EPL 2.0 Lic
 
 ## License
 
-This project is licensed under the Eclipse Public License 2.0 - see the [LICENSE.md](LICENSE.md) file for details
+This project is licensed under the Eclipse Public License 2.0 - see the [LICENSE](LICENSE) file for details

@@ -12,7 +12,8 @@
 # please see: https://github.com/agafgfafa/nginxtop/blob/master/README.md
 
 # this script makes the following assumptions:
-# 1. Each virtual hosts' log path is formatted as /var/log/nginx/site/access.log
+# 1. Each virtual hosts' log path is formatted as:
+#    /var/log/nginx/site1/access.log, /var/log/nginx/site2/access.log, ...   
 # 2. Virtual host logs are only readable by the nginx/root user
 # 3. For cache hit performance, the $upstream_cache_status is part of your access.log
 # 4. You're running nginx on Linux. Haven't tested any other platforms
@@ -91,7 +92,7 @@ get_nginx_topip_per_site() {
 
 display() {
   clear;
-  echo "ngxtop - $(hostname)    $(date)"
+  echo "nginxtop - $(hostname)    $(date)"
   echo
   echo "System -----------"
   echo "Cpu usage $CPU_USAGE%"
