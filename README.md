@@ -5,7 +5,7 @@ A bash script using basic tools to monitor NGINX web server performance, includi
 You should see something like this:
 
 ```
-ngxtop - nginx2    Fri Oct 19 09:19:50 EDT 2018
+nginxtop - nginx2    Fri Oct 19 09:19:50 EDT 2018
 
 System -----------
 Cpu usage 6.9%

@@ -50,8 +50,8 @@ get_system() {
   TOP_OUT=$(top -b -n2 | egrep "(KiB|Cpu)" | tail -3);
 
   CPU_USAGE=$(echo "$TOP_OUT" | egrep "^%Cpu" | awk '{print 100-$8'})
-  MEM_CACHE=$(echo "$TOP_OUT" | egrep "KiB Swap" | awk '{printf "%d", $9/1048576'})
-  MEM_FREE=$(echo "$TOP_OUT"  | egrep "KiB Mem" | awk '{printf "%d", $6/1048576'})
+  MEM_CACHE=$(echo "$TOP_OUT" | egrep "KiB Swap" | awk '{printf "%d", $9/100000'})
+  MEM_FREE=$(echo "$TOP_OUT"  | egrep "KiB Mem" | awk '{printf "%d", $6/100000'})
 }
 
 get_nginx_base() {
