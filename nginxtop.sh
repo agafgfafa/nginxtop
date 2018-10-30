@@ -51,7 +51,7 @@ get_system() {
   # run top twice, as some values are not precise on first pass
   TOP_OUT=$(top -b -n2 | egrep "(KiB|Cpu)" | tail -3);
 
-  CPU_USAGE=$(echo "$TOP_OUT" | egrep "^%Cpu" | awk '{print 100-$8'})
+  CPU_USAGE=$(echo "$TOP_OUT" | egrep -o "([0-9\.]+) id" | awk '{print 100-$1}')
   read MEM_CACHE MEM_FREE <<<$(free -g | egrep "^Mem:" | awk '{print $7 " " $4'})
 }
 
