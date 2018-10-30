@@ -113,7 +113,7 @@ get_if_throughput() {
   RCVP_HR=$(echo "scale=0; $RCVPE - $RCVPB" | bc -l | numfmt --to=si)
   TXP_HR=$(echo "scale=0; $TXPE - $TXPB" | bc -l | numfmt --to=si)
 
-  printf "%-12s %4s     %3s       |    %4s    %3s" "$IFB" "$TXB_HR" "$TXP_HR" "$RCVB_HR" "$RCVP_HR"
+  printf "%-12s %4s     %4s      |    %4s   %4s" "$IFB" "$TXB_HR" "$TXP_HR" "$RCVB_HR" "$RCVP_HR"
 
 }
 
