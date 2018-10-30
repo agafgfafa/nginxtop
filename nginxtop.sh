@@ -94,9 +94,9 @@ get_nginx_topip_per_site() {
 
 # Poll one-second interface stats from /proc/net/dev
 get_onesecond_interface_data() {
-  ONE_SEC_IF_DATA_START=$(cat /proc/net/dev | egrep "\s+[a-zA-Z0-9][^lo]+: [0123456789\s]+")
+  ONE_SEC_IF_DATA_START=$(cat /proc/net/dev | egrep "\s+[a-zA-Z0-9][^lo]+: [0123456789\s]+" | sort)
   sleep 1s
-  ONE_SEC_IF_DATA_END=$(cat /proc/net/dev | egrep "\s+[a-zA-Z0-9][^lo]+: [0123456789\s]+")
+  ONE_SEC_IF_DATA_END=$(cat /proc/net/dev | egrep "\s+[a-zA-Z0-9][^lo]+: [0123456789\s]+" | sort)
 }
 
 # Calculate interface throughput, given one interface
@@ -113,7 +113,8 @@ get_if_throughput() {
   RCVP_HR=$(echo "scale=0; $RCVPE - $RCVPB" | bc -l | numfmt --to=si)
   TXP_HR=$(echo "scale=0; $TXPE - $TXPB" | bc -l | numfmt --to=si)
 
-  printf "%s        %s     %s       |    %s    %s" "$IFB" "$TXB_HR" "$TXP_HR" "$RCVB_HR" "$RCVP_HR"
+  printf "%-12s %4s     %3s       |    %4s    %3s" "$IFB" "$TXB_HR" "$TXP_HR" "$RCVB_HR" "$RCVP_HR"
+
 }
 
 # the UI
@@ -129,8 +130,8 @@ display() {
 
   if [ ! -z "$INTERFACE_STATS" ] ; then
     echo
-    echo "Interface   TX bps   pkts/sec   |  RX bps  pkts/sec"
-    echo "$INTERFACE_STATS"
+    echo -n "Interface   TX bps   pkts/sec   |  RX bps  pkts/sec"
+    echo -e "$INTERFACE_STATS"
   fi 
 
   echo
@@ -176,7 +177,7 @@ while [ 1 ]; do
     while read line ; do
       INTERFACE=$(echo $line | awk '{print $1}')
       IF_THRU=$(get_if_throughput $INTERFACE)
-      INTERFACE_STATS=$INTERFACE_STATS$IF_THRU
+      INTERFACE_STATS="$INTERFACE_STATS\n$IF_THRU"
     done < <(echo "$ONE_SEC_IF_DATA_START")
   else
     get_nginx_cacheonly
