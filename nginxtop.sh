@@ -29,6 +29,7 @@ set -o pipefail
 }
 
 NGINX_LOG_PATH=/var/log/nginx
+NGINX_HITS_SCOREBOARD=/tmp/nginx-scoreboard
 BRIEF=
 
 
@@ -58,28 +59,46 @@ get_system() {
 # Get base nginx info
 get_nginx_base() {
   NGINX_TOTAL_HITS=0
+  NGINX_TOTAL_HPS=0
   NGINX_CACHE_STATUS_STR=$(for CACHE_PATH in $(grep proxy_cache_path /etc/nginx/nginx.conf | awk '{print $2}'); do du $CACHE_PATH -sh | awk '{print $2 " " $1}'; done);
+}
+
+get_nginx_sitelist() {
+  NGINX_SITE_LIST=$(find $NGINX_LOG_PATH -mindepth 1 -maxdepth 1 -type d | egrep -o "[A-Za-z0-9\.-]+$" | sort)
 }
 
 # get nginx hits
 get_nginx_hits() {
-  NGINX_SITE_STATUS_STR=$(printf "%25s   %s  %s  %s \n" "Site" "Hits" "Cache" "Top IP Addresses (last 5K req)";
-                for SITE in $(find $NGINX_LOG_PATH -mindepth 1 -maxdepth 1 -type d | egrep -o "[A-Za-z0-9\.-]+$" | sort); do  
-                        HITS=$(wc -l $NGINX_LOG_PATH/$SITE/access.log | awk '{print $1}'); 
+  NOW=$(date +%s)
+
+  # read the old scoreboard, then zero it out
+  OLD_SCOREBOARD=$(cat $NGINX_HITS_SCOREBOARD);
+  cat > $NGINX_HITS_SCOREBOARD < /dev/null;
+
+  NGINX_SITE_STATUS_STR=$(printf "%25s   %s  %s  %s  %s \n" "Site" "Hits" "Hits/s" "Cache" "Top IP Addresses (last 5K req)";
+                for SITE in $(echo "$NGINX_SITE_LIST"); do  
+                        HITS=$(wc -l $NGINX_LOG_PATH/$SITE/access.log | awk '{print $1}');
+                        echo "$SITE:$NOW:$HITS" >> $NGINX_HITS_SCOREBOARD;
+                        read OLD_NOW OLD_HITS <<<$(echo "$OLD_SCOREBOARD" | awk -F: "/${SITE}/"'{ print $2 " " $3 }')
+                        HPS=$(echo "scale=0; ($HITS - $OLD_HITS) / ($NOW - $OLD_NOW)" | bc -l);
                         HITS_HR=$(numfmt --to=si $HITS);
                         ((NGINX_TOTAL_HITS+=$HITS));
+                        ((NGINX_TOTAL_HPS+=$HPS));
                         CACHE_HITS=$(tail -n 5000 $NGINX_LOG_PATH/$SITE/access.log | grep -c " HIT "); 
                         CACHE_HIT_RATE=$(echo "scale=0; $CACHE_HITS/50" | bc -l);
                         TOP_IP=$(get_nginx_topip_per_site $SITE);
-                        printf "%25s: %5s   %2d%%   %s\n" "$SITE" "$HITS_HR" "$CACHE_HIT_RATE" "$TOP_IP"; 
-                done; echo "$NGINX_TOTAL_HITS totalhits");
+                        printf "%25s: %5s  %5s     %2d%%  %s\n" "$SITE" "$HITS_HR" "$HPS" "$CACHE_HIT_RATE" "$TOP_IP"; 
+                done; echo "$NGINX_TOTAL_HITS totalhits $NGINX_TOTAL_HPS totalhps");
+
+  # pull some additional numbers from the above subshell
   NGINX_TOTAL_HITS=$(echo $NGINX_SITE_STATUS_STR | egrep -o "[0-9]+ totalhits" | awk '{print $1}')
+  NGINX_TOTAL_HPS=$(echo $NGINX_SITE_STATUS_STR | egrep -o "[0-9]+ totalhps" | awk '{print $1}')
   NGINX_TOTAL_HITS_HR=$(numfmt --to=si $NGINX_TOTAL_HITS)
 }
 
 get_nginx_cacheonly() {
   NGINX_SITE_STATUS_STR=$(printf "%25s  %s  %s \n" "Site" "Cache" "Top IP Addresses (last 5K req)";
-                for SITE in $(find $NGINX_LOG_PATH -mindepth 1 -maxdepth 1 -type d | egrep -o "[A-Za-z0-9\.-]+$" | sort); do  
+                for SITE in $(echo "$NGINX_SITE_LIST"); do  
                         CACHE_HITS=$(tail -n 5000 $NGINX_LOG_PATH/$SITE/access.log | grep -c " HIT "); 
                         CACHE_HIT_RATE=$(echo "scale=0; $CACHE_HITS/50" | bc -l);
                         TOP_IP=$(get_nginx_topip_per_site $SITE);
@@ -140,7 +159,7 @@ display() {
   echo "$NGINX_CACHE_STATUS_STR"
   echo
   if [ ! $BRIEF ]; then
-    printf "Total hits %s since midnight\n" "$NGINX_TOTAL_HITS_HR"
+    printf "Total hits %s since midnight, now %s hits/s\n" "$NGINX_TOTAL_HITS_HR" "$NGINX_TOTAL_HPS"
   fi
   echo "$NGINX_SITE_STATUS_STR" | egrep -v totalhits
 
@@ -158,6 +177,16 @@ while getopts ":b" opt; do
       ;;
   esac
 done
+
+get_nginx_sitelist
+# initialize scoreboard
+if [ ! -f "$NGINX_HITS_SCOREBOARD" ]; then
+  touch "$NGINX_HITS_SCOREBOARD"
+  NOW=$(date +%s)
+  for SITE in $(echo "$NGINX_SITE_LIST"); do
+    echo "$SITE:$NOW:0" >> $NGINX_HITS_SCOREBOARD;
+  done
+fi
 
 
 echo "Gathering metrics...."
