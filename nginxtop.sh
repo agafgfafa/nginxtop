@@ -60,7 +60,11 @@ get_system() {
 get_nginx_base() {
   NGINX_TOTAL_HITS=0
   NGINX_TOTAL_HPS=0
-  NGINX_CACHE_STATUS_STR=$(for CACHE_PATH in $(grep proxy_cache_path /etc/nginx/nginx.conf | awk '{print $2}'); do du $CACHE_PATH -sh | awk '{print $2 " " $1}'; done);
+  NGINX_CACHE_STATUS_STR=$(for CACHE_PATH in $(grep proxy_cache_path /etc/nginx/nginx.conf | awk '{print $2}'); do 
+                            DU=$(du $CACHE_PATH -sh | awk '{print $1}'); 
+                            FC=$(find $CACHE_PATH -type f | wc -l);
+                            echo "$CACHE_PATH $DU $FC items"
+                           done);
 }
 
 get_nginx_sitelist() {
