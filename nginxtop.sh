@@ -143,7 +143,7 @@ get_if_throughput() {
 # the UI
 display() {
   clear;
-  echo "ngxtop - $(hostname)    $(date)"
+  echo "nginxtop - $(hostname)    $(date)"
   echo
   echo "System -----------"
   echo "Cpu usage $CPU_USAGE%"
@@ -193,7 +193,7 @@ if [ ! -f "$NGINX_HITS_SCOREBOARD" ]; then
 fi
 
 
-echo "Gathering metrics...."
+echo "Gathering metrics..."
 
 while [ 1 ]; do
   INTERFACE_STATS=""
