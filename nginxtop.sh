@@ -79,7 +79,12 @@ get_nginx_hits() {
   OLD_SCOREBOARD=$(cat $NGINX_HITS_SCOREBOARD);
   cat > $NGINX_HITS_SCOREBOARD < /dev/null;
 
-  NGINX_SITE_STATUS_STR=$(printf "%25s   %s  %s  %s  %s \n" "Site" "Hits" "Hits/s" "Cache" "Top IP Addresses (last 5K req)";
+  NGINX_SITE_STATUS_STR=$(
+                if [ -z "$BRIEF" ] ; then
+                    printf "%25s   %s  %s  %s  %s \n" "Site" "Hits" "Hits/s" "Cache" "Top IP Addresses (last 5K req)";
+                else 
+                    printf "%25s   %s  %s  %s  %s \n" "Site" "Hits" "Hits/s" "Cache";
+                fi;
                 for SITE in $(echo "$NGINX_SITE_LIST"); do  
                         HITS=$(wc -l $NGINX_LOG_PATH/$SITE/access.log | awk '{print $1}');
                         echo "$SITE:$NOW:$HITS" >> $NGINX_HITS_SCOREBOARD;
@@ -91,7 +96,11 @@ get_nginx_hits() {
                         CACHE_HITS=$(tail -n 5000 $NGINX_LOG_PATH/$SITE/access.log | grep -c " HIT "); 
                         CACHE_HIT_RATE=$(echo "scale=0; $CACHE_HITS/50" | bc -l);
                         TOP_IP=$(get_nginx_topip_per_site $SITE);
-                        printf "%25s: %5s  %5s     %2d%%  %s\n" "$SITE" "$HITS_HR" "$HPS" "$CACHE_HIT_RATE" "$TOP_IP"; 
+                        if [ -z "$BRIEF" ] ; then
+                          printf "%25s: %5s  %5s     %2d%%  %s\n" "$SITE" "$HITS_HR" "$HPS" "$CACHE_HIT_RATE" "$TOP_IP"; 
+                        else
+                          printf "%25s: %5s  %5s     %2d%%\n" "$SITE" "$HITS_HR" "$HPS" "$CACHE_HIT_RATE"
+                        fi;
                 done; echo "$NGINX_TOTAL_HITS totalhits $NGINX_TOTAL_HPS totalhps");
 
   # pull some additional numbers from the above subshell
@@ -101,12 +110,11 @@ get_nginx_hits() {
 }
 
 get_nginx_cacheonly() {
-  NGINX_SITE_STATUS_STR=$(printf "%25s  %s  %s \n" "Site" "Cache" "Top IP Addresses (last 5K req)";
+  NGINX_SITE_STATUS_STR=$(printf "%25s  %s\n" "Site" "Cache";
                 for SITE in $(echo "$NGINX_SITE_LIST"); do  
                         CACHE_HITS=$(tail -n 5000 $NGINX_LOG_PATH/$SITE/access.log | grep -c " HIT "); 
                         CACHE_HIT_RATE=$(echo "scale=0; $CACHE_HITS/50" | bc -l);
-                        TOP_IP=$(get_nginx_topip_per_site $SITE);
-                        printf "%25s:  %2d%%  %s \n" "$SITE" "$CACHE_HIT_RATE" "$TOP_IP"; 
+                        printf "%25s:  %2d%%\n" "$SITE" "$CACHE_HIT_RATE"; 
                 done;)
 }
 
@@ -162,9 +170,7 @@ display() {
   echo "Cache store"
   echo "$NGINX_CACHE_STATUS_STR"
   echo
-  if [ ! $BRIEF ]; then
-    printf "Total hits %s since midnight, now %s hits/s\n" "$NGINX_TOTAL_HITS_HR" "$NGINX_TOTAL_HPS"
-  fi
+  printf "Total hits %s since midnight, now %s hits/s\n" "$NGINX_TOTAL_HITS_HR" "$NGINX_TOTAL_HPS"
   echo "$NGINX_SITE_STATUS_STR" | egrep -v totalhits
 
 }
@@ -202,18 +208,14 @@ while [ 1 ]; do
   get_conn
   get_system
   get_nginx_base
-  if [ ! $BRIEF ]; then
-    get_nginx_hits
+  get_nginx_hits
 
-    # Get formatted interface data 
-    get_onesecond_interface_data
-    while read line ; do
-      INTERFACE=$(echo $line | awk '{print $1}')
-      IF_THRU=$(get_if_throughput $INTERFACE)
-      INTERFACE_STATS="$INTERFACE_STATS\n$IF_THRU"
-    done < <(echo "$ONE_SEC_IF_DATA_START")
-  else
-    get_nginx_cacheonly
- fi
+  # Get formatted interface data 
+  get_onesecond_interface_data
+  while read line ; do
+    INTERFACE=$(echo $line | awk '{print $1}')
+    IF_THRU=$(get_if_throughput $INTERFACE)
+    INTERFACE_STATS="$INTERFACE_STATS\n$IF_THRU"
+  done < <(echo "$ONE_SEC_IF_DATA_START")
   display
 done
