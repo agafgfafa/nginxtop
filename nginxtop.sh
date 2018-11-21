@@ -40,6 +40,10 @@ get_diskio() {
   read DSK_BI DSK_BO <<<$(vmstat 2 2 | tail -1 | awk '{printf "%d %d", $9/1024, $10/1024}');
 }
 
+get_openfiles() {
+  FS_OPENFILES=$(lsof -n | wc -l)
+}
+
 # Get system connections
 get_conn() {
   CONN_MAX=$(sysctl net.netfilter.nf_conntrack_max | awk '{print $3}');
@@ -155,7 +159,7 @@ display() {
   echo
   echo "System -----------"
   echo "Cpu usage $CPU_USAGE%"
-  echo "Disk IO $DSK_BI read $DSK_BO write MB/s"
+  echo "Disk IO $DSK_BI read $DSK_BO write MB/s $FS_OPENFILES open files"
   echo "Mem $MEM_CACHE cache $MEM_FREE free GB"
   echo "IP Connections $CONN_NOW/$CONN_MAX ($CONN_HR%)"
 
@@ -205,6 +209,7 @@ while [ 1 ]; do
   INTERFACE_STATS=""
 
   get_diskio
+  get_openfiles
   get_conn
   get_system
   get_nginx_base
