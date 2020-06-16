@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #*******************************************************************************
-# Copyright (c) 2018 Eclipse Foundation.
+# Copyright (c) 2018-2020 Eclipse Foundation.
 # This program and the accompanying materials are made available
 # under the terms of the Eclipse Public License 2.0
 # which is available at http://www.eclipse.org/legal/epl-v20.html
@@ -129,9 +129,9 @@ get_nginx_topip_per_site() {
 
 # Poll one-second interface stats from /proc/net/dev
 get_onesecond_interface_data() {
-  ONE_SEC_IF_DATA_START=$(cat /proc/net/dev | egrep "\s+[a-zA-Z0-9][^lo]+: [0123456789\s]+" | sort)
+  ONE_SEC_IF_DATA_START=$(cat /proc/net/dev | egrep "\s+?[a-zA-Z0-9][^lo]+: [0123456789\s]+" | sort)
   sleep 1s
-  ONE_SEC_IF_DATA_END=$(cat /proc/net/dev | egrep "\s+[a-zA-Z0-9][^lo]+: [0123456789\s]+" | sort)
+  ONE_SEC_IF_DATA_END=$(cat /proc/net/dev | egrep "\s+?[a-zA-Z0-9][^lo]+: [0123456789\s]+" | sort)
 }
 
 # Calculate interface throughput, given one interface
